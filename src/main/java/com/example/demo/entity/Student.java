@@ -2,20 +2,20 @@ package com.example.demo.entity;
 
 import lombok.Data;
 import javax.persistence.*;
-import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "messages")
-public class Message {
+@Table(name = "students")
+public class Student {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    private String senderName;
-    private String senderId;
-    private String content;
-    private LocalDateTime sendTime;
-    private String status; // "public", "private"
+    private String name;
+    private String studentId;
+    private String gender;
+    private String major;
+    private String classNumber;
+    private String role; // "admin" or "user"
 }
