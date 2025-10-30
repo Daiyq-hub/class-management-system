@@ -1,21 +1,671 @@
 <!DOCTYPE html>
-<html>
-<body>
-    <input id="ip" placeholder="IP">
-    <input id="port" placeholder="Port">
-    <button onclick="connect()">Connect as Client</button>
-    <button onclick="listen()">Listen as Server</button>
-    <textarea id="messages"></textarea>
-    <input id="msg" placeholder="Message">
-    <button onclick="send()">Send</button>
-    
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级管理系统 - 在线聊天室</title>
+    <!--Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!--Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义 Tailwind 配置 -->
     <script>
-        let socket;
-        function listen() {
-            // Java后端需启动ServerSocket，但这里模拟前端触发
-            // 实际: 使用WebSocket或后端Socket；但要求Socket，故后端实现
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#60a5fa',
+                        light: '#f0f9ff',
+                        dark: '#1e3a8a'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'nav': '0 2px 10px rgba(0, 0, 0, 0.05)'
+                    }
+                }
+            }
         }
-        // ... (JS调用后端Socket API)
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, theme('colors.primary'), theme('colors.secondary'));
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .sidebar-active {
+                @apply bg-white text-primary border-l-4 border-primary;
+            }
+            .sidebar-icon {
+                @apply mr-3 text-lg;
+            }
+            .card-hover {
+                @apply hover:shadow-lg hover:-translate-y-1 transition-all duration-300;
+            }
+        }
+        
+        /* 自定义定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* 消息气泡样式 */
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+            word-break: break-word;
+        }
+        
+        .message-bubble.sent {
+            background-color: #3b82f6;
+            color: white;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+        }
+        
+        .message-bubble.received {
+            background-color: #f1f1f1;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+        
+        /* 消息时间戳 */
+        .message-time {
+            font-size: 0.75rem;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+        
+        /* 消息动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message-animate {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 侧边栏导航 -->
+        <aside id="sidebar" class="bg-gradient-primary text-white w-64 flex-shrink-0 hidden md:block transition-all duration-300 ease-in-out">
+            <!-- 系统标题 -->
+            <div class="p-4 flex items-center justify-center border-b border-blue-700">
+                <i class="fa fa-graduation-cap text-2xl mr-2"></i>
+                <h1 class="text-xl font-bold">班级管理系统</h1>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="p-4 border-b border-blue-700">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center mr-3">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium">管理员</p>
+                        <p class="text-xs text-blue-200">admin@example.com</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <nav class="mt-4">
+                <ul>
+                    <li>
+                        <a href="/index.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-dashboard sidebar-icon"></i>
+                            <span>系统首页</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-users sidebar-icon"></i>
+                            <span>班级人员管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/committee.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-star sidebar-icon"></i>
+                            <span>班委会管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/schedule.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-calendar sidebar-icon"></i>
+                            <span>值日安排管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/activities.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-flag sidebar-icon"></i>
+                            <span>班级活动记录</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/messages.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-comments sidebar-icon"></i>
+                            <span>班级留言簿</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/chat.html" class="flex items-center px-4 py-3 sidebar-active">
+                            <i class="fa fa-wechat sidebar-icon"></i>
+                            <span>在线聊天室</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/reflection.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-magic sidebar-icon"></i>
+                            <span>反射机制测试</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/map.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-map sidebar-icon"></i>
+                            <span>映射功能测试</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- 底部 -->
+            <div class="absolute bottom-0 w-full p-4 border-t border-blue-700">
+                <a href="/login.html" class="flex items-center justify-center text-sm text-blue-200 hover:text-white transition-all-300">
+                    <i class="fa fa-sign-out mr-2"></i>
+                    <span>退出登录</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航栏 -->
+            <header class="bg-white shadow-nav z-10">
+                <div class="flex items-center justify-between p-4">
+                    <!-- 移动端菜单按钮 -->
+                    <button id="menu-toggle" class="md:hidden text-gray-600 focus:outline-none">
+                        <i class="fa fa-bars text-xl"></i>
+                    </button>
+                    
+                    <!-- 页面标题 -->
+                    <h2 id="page-title" class="text-xl font-semibold text-gray-800">在线聊天室</h2>
+                    
+                    <!-- 右侧工具栏 -->
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                <i class="fa fa-bell text-xl"></i>
+                                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <button class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                <i class="fa fa-cog text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 内容区域 -->
+            <main class="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <div class="container mx-auto">
+                    <!-- WebSocket配置 -->
+                    <div class="bg-white rounded-xl shadow-card p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">WebSocket配置</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="ws-url" class="block text-sm font-medium text-gray-700 mb-1">WebSocket URL</label>
+                                <input type="text" id="ws-url" class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" value="ws://localhost:8080/chat" placeholder="ws://localhost:8080/chat">
+                            </div>
+                            <div class="flex items-end">
+                                <button id="connect-btn" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg w-full">
+                                    <i class="fa fa-connectdevelop mr-2"></i> 连接
+                                </button>
+                                <button id="disconnect-btn" class="ml-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg w-full hidden">
+                                    <i class="fa fa-disconnect mr-2"></i> 断开
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div id="connection-status" class="flex items-center text-sm">
+                                <span class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                                <span>未连接</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 聊天室 -->
+                    <div class="bg-white rounded-xl shadow-card overflow-hidden">
+                        <!-- 聊天头部 -->
+                        <div class="bg-primary text-white p-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold">班级聊天室</h3>
+                                <div class="flex items-center">
+                                    <span id="online-count" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-primary mr-2">
+                                        <span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                                        0人在线
+                                    </span>
+                                    <button id="clear-chat-btn" class="text-white hover:text-blue-200 focus:outline-none">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 聊天内容区域 -->
+                        <div id="chat-messages" class="h-[500px] overflow-y-auto p-4 space-y-4 flex flex-col">
+                            <!-- 系统消息 -->
+                            <div class="flex justify-center">
+                                <span class="px-3 py-1 text-xs bg-gray-100 text-gray-500 rounded-full">
+                                    今天 14:30
+                                </span>
+                            </div>
+
+                            <!-- 系统通知 -->
+                            <div class="flex justify-center">
+                                <span class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                    欢迎来到班级聊天室
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 聊天输入区域 -->
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex items-center">
+                                <button id="emoji-btn" class="text-gray-500 hover:text-gray-700 p-2">
+                                    <i class="fa fa-smile-o text-xl"></i>
+                                </button>
+                                <button id="image-btn" class="text-gray-500 hover:text-gray-700 p-2">
+                                    <i class="fa fa-image text-xl"></i>
+                                </button>
+                                <div class="flex-1 relative">
+                                    <input type="text" id="chat-input" class="w-full border border-gray-300 rounded-full py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" placeholder="输入消息...">
+                                </div>
+                                <button id="send-message-btn" class="ml-2 bg-primary hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <i class="fa fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 反射机制和映射功能测试链接 -->
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-600">其他功能测试：</p>
+                        <div class="flex justify-center space-x-4 mt-2">
+                            <a href="/reflection.html" class="text-primary hover:text-blue-700">
+                                <i class="fa fa-magic mr-1"></i> 反射机制测试
+                            </a>
+                            <a href="/map.html" class="text-primary hover:text-blue-700">
+                                <i class="fa fa-map mr-1"></i> 映射功能测试
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 表情选择器模态框 -->
+    <div id="emoji-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50 hidden">
+        <div class="bg-white rounded-t-xl w-full max-w-lg mx-4 animate-fadeIn">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="font-medium text-gray-800">选择表情</h3>
+                <button id="close-emoji-modal" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="grid grid-cols-8 gap-2">
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">😊</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">😂</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">😍</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🥰</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">😭</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">😘</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🥳</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🎉</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">👍</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">❤️</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🔥</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">👏</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🤔</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🤗</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🤩</button>
+                    <button class="emoji-btn w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full">🤙</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 移动端菜单切换
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (menuToggle && sidebar) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('hidden');
+                });
+            }
+
+            // WebSocket相关元素
+            const wsUrlInput = document.getElementById('ws-url');
+            const connectBtn = document.getElementById('connect-btn');
+            const disconnectBtn = document.getElementById('disconnect-btn');
+            const connectionStatus = document.getElementById('connection-status');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input');
+            const sendMessageBtn = document.getElementById('send-message-btn');
+            const onlineCount = document.getElementById('online-count');
+            const clearChatBtn = document.getElementById('clear-chat-btn');
+
+            // 表情选择器相关元素
+            const emojiBtn = document.getElementById('emoji-btn');
+            const emojiModal = document.getElementById('emoji-modal');
+            const closeEmojiModal = document.getElementById('close-emoji-modal');
+            const emojiBtns = document.querySelectorAll('.emoji-btn');
+
+            // WebSocket对象
+            let ws = null;
+
+            // 连接状态
+            let isConnected = false;
+
+            // 连接WebSocket
+            function connectWebSocket() {
+                const url = wsUrlInput.value.trim() || 'ws://localhost:8080/chat';
+                
+                try {
+                    ws = new WebSocket(url);
+                    
+                    // 连接成功
+                    ws.onopen = function() {
+                        console.log('WebSocket连接成功');
+                        updateConnectionStatus(true);
+                        addSystemMessage('WebSocket连接成功');
+                    };
+                    
+                    // 接收消息
+                    ws.onmessage = function(event) {
+                        console.log('收到消息:', event.data);
+                        handleMessage(event.data);
+                    };
+                    
+                    // 连接关闭
+                    ws.onclose = function(event) {
+                        console.log('WebSocket连接关闭:', event);
+                        updateConnectionStatus(false);
+                        addSystemMessage('WebSocket连接已断开');
+                    };
+                    
+                    // 连接错误
+                    ws.onerror = function(error) {
+                        console.error('WebSocket错误:', error);
+                        updateConnectionStatus(false);
+                        addSystemMessage('WebSocket连接错误');
+                    };
+                } catch (error) {
+                    console.error('WebSocket连接失败:', error);
+                    updateConnectionStatus(false);
+                    addSystemMessage('WebSocket连接失败');
+                }
+            }
+
+            // 断开WebSocket连接
+            function disconnectWebSocket() {
+                if (ws) {
+                    ws.close();
+                    ws = null;
+                }
+            }
+
+            // 更新连接状态
+            function updateConnectionStatus(connected) {
+                isConnected = connected;
+                
+                if (connected) {
+                    connectionStatus.innerHTML = '<span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span><span>已连接</span>';
+                    connectBtn.classList.add('hidden');
+                    disconnectBtn.classList.remove('hidden');
+                    sendMessageBtn.disabled = false;
+                } else {
+                    connectionStatus.innerHTML = '<span class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span><span>未连接</span>';
+                    connectBtn.classList.remove('hidden');
+                    disconnectBtn.classList.add('hidden');
+                    sendMessageBtn.disabled = true;
+                }
+            }
+
+            // 发送消息
+            function sendMessage() {
+                const message = chatInput.value.trim();
+                
+                if (!isConnected) {
+                    alert('WebSocket未连接，请先连接');
+                    return;
+                }
+                
+                if (!message) return;
+                
+                try {
+                    ws.send(message);
+                    addSentMessage(message);
+                    chatInput.value = '';
+                } catch (error) {
+                    console.error('发送消息失败:', error);
+                    addSystemMessage('发送消息失败');
+                }
+            }
+
+            // 处理接收到的消息
+            function handleMessage(message) {
+                // 检查是否是系统消息
+                if (message.startsWith('系统:')) {
+                    addSystemMessage(message.substring(3));
+                    
+                    // 检查是否是在线人数更新
+                    if (message.includes('在线人数:')) {
+                        const count = message.match(/在线人数: (\d+)/);
+                        if (count && count[1]) {
+                            updateOnlineCount(parseInt(count[1]));
+                        }
+                    }
+                } else {
+                    // 检查是否是其他用户发送的消息
+                    // 假设消息格式为 "用户名: 消息内容"
+                    const separatorIndex = message.indexOf(':');
+                    if (separatorIndex > 0) {
+                        const username = message.substring(0, separatorIndex);
+                        const content = message.substring(separatorIndex + 2); // +2 是为了跳过 ": "
+                        addReceivedMessage(username, content);
+                    } else {
+                        // 如果不是预期格式，直接显示
+                        addReceivedMessage('未知用户', message);
+                    }
+                }
+            }
+
+            // 添加系统消息
+            function addSystemMessage(content) {
+                const messageHTML = `
+                    <div class="flex justify-center message-animate">
+                        <span class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                            ${content}
+                        </span>
+                    </div>
+                `;
+                
+                chatMessages.insertAdjacentHTML('beforeend', messageHTML);
+                scrollToBottom();
+            }
+
+            // 添加发送的消息
+            function addSentMessage(content) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const messageHTML = `
+                    <div class="flex justify-end message-animate">
+                        <div class="flex flex-col items-end max-w-[70%]">
+                            <div class="message-bubble sent">
+                                ${content}
+                                <div class="message-time text-right">${timeString}</div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">我</div>
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.insertAdjacentHTML('beforeend', messageHTML);
+                scrollToBottom();
+            }
+
+            // 添加收到的消息
+            function addReceivedMessage(username, content) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // 生成用户头像的初始字母
+                const initial = username.charAt(0).toUpperCase();
+                
+                // 生成随机颜色
+                const colors = ['blue', 'green', 'purple', 'pink', 'yellow', 'red'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const messageHTML = `
+                    <div class="flex message-animate">
+                        <div class="w-8 h-8 rounded-full bg-${randomColor}-100 flex items-center justify-center mr-2 flex-shrink-0">
+                            <span class="text-${randomColor}-600 text-sm font-medium">${initial}</span>
+                        </div>
+                        <div class="flex flex-col max-w-[70%]">
+                            <div class="text-xs text-gray-500">${username}</div>
+                            <div class="message-bubble received">
+                                ${content}
+                                <div class="message-time text-right">${timeString}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.insertAdjacentHTML('beforeend', messageHTML);
+                scrollToBottom();
+            }
+
+            // 更新在线人数
+            function updateOnlineCount(count) {
+                onlineCount.innerHTML = `<span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span>${count}人在线`;
+            }
+
+            // 滚动到底部
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // 清空聊天记录
+            function clearChat() {
+                if (confirm('确定要清空聊天记录吗？')) {
+                    chatMessages.innerHTML = '';
+                    
+                    // 添加系统消息
+                    const now = new Date();
+                    const dateString = now.toLocaleDateString([], { month: 'long', day: 'numeric', weekday: 'long' });
+                    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    const systemHTML = `
+                        <div class="flex justify-center">
+                            <span class="px-3 py-1 text-xs bg-gray-100 text-gray-500 rounded-full">
+                                ${dateString} ${timeString}
+                            </span>
+                        </div>
+                        <div class="flex justify-center">
+                            <span class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                聊天记录已清空
+                            </span>
+                        </div>
+                    `;
+                    
+                    chatMessages.insertAdjacentHTML('beforeend', systemHTML);
+                }
+            }
+
+            // 连接按钮点击事件
+            connectBtn.addEventListener('click', connectWebSocket);
+
+            // 断开按钮点击事件
+            disconnectBtn.addEventListener('click', disconnectWebSocket);
+
+            // 发送按钮点击事件
+            sendMessageBtn.addEventListener('click', sendMessage);
+
+            // 输入框回车事件
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // 清空聊天按钮点击事件
+            clearChatBtn.addEventListener('click', clearChat);
+
+            // 表情按钮点击事件
+            emojiBtn.addEventListener('click', function() {
+                emojiModal.classList.toggle('hidden');
+            });
+
+            // 关闭表情模态框
+            closeEmojiModal.addEventListener('click', function() {
+                emojiModal.classList.add('hidden');
+            });
+
+            // 表情按钮点击事件
+            emojiBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const emoji = this.textContent;
+                    chatInput.value += emoji;
+                    emojiModal.classList.add('hidden');
+                });
+            });
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(e) {
+                if (e.target === emojiModal) {
+                    emojiModal.classList.add('hidden');
+                }
+            });
+
+            // 初始化页面
+            updateConnectionStatus(false);
+        });
     </script>
 </body>
 </html>
