@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级管理系统 - 映射功能能测试</title>
+    <!--Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!--Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!--Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 自定义 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#60a5fa',
+                        light: '#f0f9ff',
+                        dark: '#1e3a8a'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'nav': '0 2px 10px rgba(0, 0, 0, 0.05)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, theme('colors.primary'), theme('colors.secondary'));
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .sidebar-active {
+                @apply bg-white text-primary border-l-4 border-primary;
+            }
+            .sidebar-icon {
+                @apply mr-3 text-lg;
+            }
+            .card-hover {
+                @apply hover:shadow-lg hover:-translate-y-1 transition-all duration-300;
+            }
+        }
+        
+        /* 自定义定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* 代码块样式 */
+        .code-block {
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .code-keyword {
+            color: #7c3aed;
+            font-weight: 600;
+        }
+        
+        .code-string {
+            color: #10b981;
+        }
+        
+        .code-comment {
+            color: #64748b;
+            font-style: italic;
+        }
+        
+        .code-method {
+            color: #2563eb;
+        }
+        
+        .code-class {
+            color: #db2777;
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-delay-100 { animation-delay: 0.1s; }
+        .animate-delay-200 { animation-delay: 0.2s; }
+        .animate-delay-300 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 侧边栏导航 -->
+        <aside id="sidebar" class="bg-gradient-primary text-white w-64 flex-shrink-0 hidden md:block transition-all duration-300 ease-in-out">
+            <!-- 系统标题 -->
+            <div class="p-4 flex items-center justify-center border-b border-blue-700">
+                <i class="fa fa-graduation-cap text-2xl mr-2"></i>
+                <h1 class="text-xl font-bold">班级管理系统</h1>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="p-4 border-b border-blue-700">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center mr-3">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium">管理员</p>
+                        <p class="text-xs text-blue-200">admin@example.com</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <nav class="mt-4">
+                <ul>
+                    <li>
+                        <a href="/index.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-dashboard sidebar-icon"></i>
+                            <span>系统首页</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-users sidebar-icon"></i>
+                            <span>班级人员管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/committee.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-star sidebar-icon"></i>
+                            <span>班委会管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/schedule.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-calendar sidebar-icon"></i>
+                            <span>值日安排管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/activities.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-flag sidebar-icon"></i>
+                            <span>班级活动记录</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/messages.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-comments sidebar-icon"></i>
+                            <span>班级留言簿</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/chat.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-wechat sidebar-icon"></i>
+                            <span>在线聊天室</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/reflection.html" class="flex items-center px-4 py-3 hover:bg-blue-800 transition-all-300">
+                            <i class="fa fa-magic sidebar-icon"></i>
+                            <span>反射机制测试</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/map.html" class="flex items-center px-4 py-3 sidebar-active">
+                            <i class="fa fa-map sidebar-icon"></i>
+                            <span>映射功能测试</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- 底部 -->
+            <div class="absolute bottom-0 w-full p-4 border-t border-blue-700">
+                <a href="/login.html" class="flex items-center justify-center text-sm text-blue-200 hover:text-white transition-all-300">
+                    <i class="fa fa-sign-out mr-2"></i>
+                    <span>退出登录</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航栏 -->
+            <header class="bg-white shadow-nav z-10">
+                <div class="flex items-center justify-between p-4">
+                    <!-- 移动端菜单按钮 -->
+                    <button id="menu-toggle" class="md:hidden text-gray-600 focus:outline-none">
+                        <i class="fa fa-bars text-xl"></i>
+                    </button>
+                    
+                    <!-- 页面标题 -->
+                    <h2 id="page-title" class="text-xl font-semibold text-gray-800">映射功能测试</h2>
+                    
+                    <!-- 右侧工具栏 -->
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                <i class="fa fa-bell text-xl"></i>
+                                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <button class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                <i class="fa fa-cog text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 内容区域 -->
+            <main class="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <div class="container mx-auto">
+                    <!-- 页面标题 -->
+                    <div class="mb-6 text-center">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">映射功能测试</h1>
+                        <p class="text-gray-600">使用 Map/HashMap 实现键值对数据结构</p>
+                    </div>
+
+                    <!-- 映射功能说明 -->
+                    <div class="bg-white rounded-xl shadow-card p-6 mb-8 animate-fadeIn">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fa fa-info-circle text-primary"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">映射功能说明</h3>
+                        </div>
+                        
+                        <p class="text-gray-700 mb-4">
+                            映射（Map）是一种键值对集合，它提供了快速的查找能力。在本系统中，我们使用映射来存储和管理各种关联数据，
+                            如学生ID与学生信息的映射、用户名与密码的映射等。
+                        </p>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <h4 class="font-medium text-gray-800 mb-3">Java后端实现代码</h4>
+                            <pre class="code-block"><code><span class="code-comment">// 创建学生ID到学生信息的映射</span>
+Map&lt;String, Student&gt; studentMap = <span class="code-keyword">new</span> HashMap&lt;&gt;();
+
+<span class="code-comment">// 添加映射关系</span>
+studentMap.<span class="code-method">put</span>(<span class="code-string">"2023001"</span>, <span class="code-keyword">new</span> Student(<span class="code-string">"张三"</span>, <span class="code-string">"13800138001"</span>));
+studentMap.<span class="code-method">put</span>(<span class="code-string">"2023002"</span>, <span class="code-keyword">new</span> Student(<span class="code-string">"李四"</span>, <span class="code-string">"13900139002"</span>));
+
+<span class="code-comment">// 通过ID查找学生</span>
+Student student = studentMap.<span class="code-method">get</span>(<span class="code-string">"2023001"</span>);
+System.<span class="code-method">out</span>.<span class="code-method">println</span>(<span class="code-string">"找到学生: "</span> + student.<span class="code-method">getName</span>());
+
+<span class="code-comment">// 遍历映射</span>
+<span class="code-keyword">for</span> (Map.Entry&lt;String, Student&gt; entry : studentMap.<span class="code-method">entrySet</span>()) {
+    System.<span class="code-method">out</span>.<span class="code-method">println</span>(<span class="code-string">"学号: "</span> + entry.<span class="code-method">getKey</span>() + <span class="code-string">", 姓名: "</span> + entry.<span class="code-method">getValue</span>().<span class="code-method">getName</span>());
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- 学生信息映射 -->
+                    <div class="bg-white rounded-xl shadow-card p-6 mb-8 animate-fadeIn animate-delay-100">
+                        <div class="flex items-center mb-6">
+                            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                                <i class="fa fa-users text-green-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">学生信息映射</h3>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学号</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系方式</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="student-table-body">
+                                    <!-- 学生数据将通过JavaScript动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 flex justify-between items-center">
+                            <div class="text-sm text-gray-700">
+                                <span id="student-count">0</span> 条记录
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="clear-all-btn" class="px-3 py-1 border border-gray-300 rounded-md text-sm bg-white text-gray-700 hover:bg-gray-50">
+                                    <i class="fa fa-trash mr-1"></i> 清空
+                                </button>
+                                <button id="export-btn" class="px-3 py-1 border border-gray-300 rounded-md text-sm bg-white text-gray-700 hover:bg-gray-50">
+                                    <i class="fa fa-download mr-1"></i> 导出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 通过学号查找学生 -->
+                    <div class="bg-white rounded-xl shadow-card p-6 mb-8 animate-fadeIn animate-delay-200">
+                        <div class="flex items-center mb-6">
+                            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                                <i class="fa fa-search text-purple-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">通过学号查找学生</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="col-span-1 md:col-span-2">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="student-id" class="block text-sm font-medium text-gray-700 mb-1">学号</label>
+                                        <div class="relative">
+                                            <input type="text" id="student-id" class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" placeholder="输入学号" value="2023001">
+                                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                <i class="fa fa-id-card text-gray-400"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-end">
+                                <button id="find-student-btn" class="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg w-full flex items-center justify-center">
+                                    <i class="fa fa-search mr-2"></i> 查找学生
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8">
+                            <h4 class="font-medium text-gray-800 mb-3">查找结果</h4>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 min-h-[120px]">
+                                <pre id="find-result" class="text-sm text-gray-700">// 点击"查找学生"按钮查看结果...
+</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 添加学生到映射 -->
+                    <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn animate-delay-300">
+                        <div class="flex items-center mb-6">
+                            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                                <i class="fa fa-plus-circle text-red-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">添加学生到映射</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label for="new-student-id" class="block text-sm font-medium text-gray-700 mb-1">学号</label>
+                                <input type="text" id="new-student-id" class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" placeholder="输入学号">
+                            </div>
+                            <div>
+                                <label for="new-student-name" class="block text-sm font-medium text-gray-700 mb-1">姓名</label>
+                                <input type="text" id="new-student-name" class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" placeholder="输入姓名">
+                            </div>
+                            <div>
+                                <label for="new-student-contact" class="block text-sm font-medium text-gray-700 mb-1">联系方式</label>
+                                <input type="text" id="new-student-contact" class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" placeholder="输入联系方式">
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end">
+                            <button id="add-to-map-btn" class="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center justify-center">
+                                <i class="fa fa-plus mr-2"></i> 添加到映射
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 映射性能测试 -->
+                    <div class="bg-white rounded-xl shadow-card p-6 mt-8 animate-fadeIn animate-delay-300">
+                        <div class="flex items-center mb-6">
+                            <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
+                                <i class="fa fa-tachometer text-yellow-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">映射性能测试</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="test-size" class="block text-sm font-medium text-gray-700 mb-1">测试数据量</label>
+                                <div class="relative">
+                                    <input type="number" id="test-size" class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-secondary focus:border-secondary" placeholder="输入测试数据量" value="1000">
+                                </div>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="start-test-btn" class="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg w-full flex items-center justify-center">
+                                    <i class="fa fa-play mr-2"></i> 开始测试
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="text-center">
+                                        <h4 class="text-sm font-medium text-gray-500 mb-2">插入时间</h4>
+                                        <p id="insert-time" class="text-2xl font-bold text-primary">0 ms</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="text-sm font-medium text-gray-500 mb-2">查找时间</h4>
+                                        <p id="search-time" class="text-2xl font-bold text-green-600">0 ms</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="text-sm font-medium text-gray-500 mb-2">遍历时间</h4>
+                                        <p id="iterate-time" class="text-2xl font-bold text-purple-600">0 ms</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <h4 class="font-medium text-gray-800 mb-3">性能对比图</h4>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <canvas id="performance-chart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 移动端菜单切换
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (menuToggle && sidebar) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('hidden');
+                });
+            }
+
+            // 模拟学生数据映射
+            const studentMap = new Map();
+            
+            // 初始化学生数据
+            function initStudentMap() {
+                studentMap.set('2023001', { name: '张三', contact: '13800138001' });
+                studentMap.set('2023002', { name: '李四', contact: '13900139002' });
+                studentMap.set('2023003', { name: '王五', contact: '13700137003' });
+                studentMap.set('2023004', { name: '赵六', contact: '13600136004' });
+                studentMap.set('2023005', { name: '钱七', contact: '13500135005' });
+                
+                updateStudentTable();
+            }
+
+            // 更新学生表格
+            function updateStudentTable() {
+                const tableBody = document.getElementById('student-table-body');
+                const studentCount = document.getElementById('student-count');
+                
+                // 清空表格
+                tableBody.innerHTML = '';
+                
+                // 添加学生数据
+                studentMap.forEach((student, id) => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.contact}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="edit-btn text-blue-600 hover:text-blue-900 mr-3" data-id="${id}">编辑</button>
+                            <button class="delete-btn text-red-600 hover:text-red-900" data-id="${id}">删除</button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // 更新学生数量
+                studentCount.textContent = studentMap.size;
+                
+                // 添加编辑和删除按钮事件
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        const student = studentMap.get(id);
+                        
+                        if (student) {
+                            document.getElementById('new-student-id').value = id;
+                            document.getElementById('new-student-name').value = student.name;
+                            document.getElementById('new-student-contact').value = student.contact;
+                            
+                            // 滚动到添加表单
+                            document.getElementById('add-to-map-btn').scrollIntoView({ behavior: 'smooth' });
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        
+                        if (confirm(`确定要删除学号为 ${id} 的学生吗？`)) {
+                            studentMap.delete(id);
+                            updateStudentTable();
+                        }
+                    });
+                });
+            }
+
+            // 查找学生
+            function findStudent() {
+                const studentId = document.getElementById('student-id').value.trim();
+                const findResult = document.getElementById('find-result');
+                
+                if (!studentId) {
+                    alert('请输入学号');
+                    return;
+                }
+                
+                // 显示加载状态
+                findResult.textContent = `// 正在查找学号为 "${studentId}" 的学生...\n`;
+                
+                // 模拟查找延迟
+                setTimeout(() => {
+                    const student = studentMap.get(studentId);
+                    
+                    if (student) {
+                        findResult.textContent = `// 查找学号为 "${studentId}" 的学生\n// 查找结果:\n学号: ${studentId}\n姓名: ${student.name}\n联系方式: ${student.contact}`;
+                    } else {
+                        findResult.textContent = `// 查找学号为 "${studentId}" 的学生\n// 查找结果:\n未找到学号为 "${studentId}" 的学生`;
+                    }
+                }, 300);
+            }
+
+            // 添加学生到映射
+            function addToMap() {
+                const newStudentId = document.getElementById('new-student-id').value.trim();
+                const newStudentName = document.getElementById('new-student-name').value.trim();
+                const newStudentContact = document.getElementById('new-student-contact').value.trim();
+                
+                if (!newStudentId || !newStudentName || !newStudentContact) {
+                    alert('请填写完整信息');
+                    return;
+                }
+                
+                // 检查学号是否已存在
+                if (studentMap.has(newStudentId)) {
+                    // 更新现有学生
+                    studentMap.set(newStudentId, { name: newStudentName, contact: newStudentContact });
+                    alert('学生信息已更新！');
+                } else {
+                    // 添加新学生
+                    studentMap.set(newStudentId, { name: newStudentName, contact: newStudentContact });
+                    alert('学生添加成功！');
+                }
+                
+                // 更新表格
+                updateStudentTable();
+                
+                // 清空表单
+                document.getElementById('new-student-id').value = '';
+                document.getElementById('new-student-name').value = '';
+                document.getElementById('new-student-contact').value = '';
+            }
+
+            // 清空所有学生
+            function clearAll() {
+                if (confirm('确定要清空所有学生数据吗？')) {
+                    studentMap.clear();
+                    updateStudentTable();
+                    alert('所有学生数据已清空！');
+                }
+            }
+
+            // 导出学生数据
+            function exportData() {
+                if (studentMap.size === 0) {
+                    alert('没有数据可导出');
+                    return;
+                }
+                
+                // 生成CSV内容
+                let csvContent = '学号,姓名,联系方式\n';
+                
+                studentMap.forEach((student, id) => {
+                    csvContent += `${id},${student.name},${student.contact}\n`;
+                });
+                
+                // 创建Blob对象
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', '学生数据.csv');
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // 性能测试
+            function startPerformanceTest() {
+                const testSize = parseInt(document.getElementById('test-size').value) || 1000;
+                const insertTimeEl = document.getElementById('insert-time');
+                const searchTimeEl = document.getElementById('search-time');
+                const iterateTimeEl = document.getElementById('iterate-time');
+                
+                // 显示加载状态
+                insertTimeEl.textContent = '测试中...';
+                searchTimeEl.textContent = '测试中...';
+                iterateTimeEl.textContent = '测试中...';
+                
+                // 创建测试数据
+                const testMap = new Map();
+                const testKeys = [];
+                
+                // 插入测试
+                const insertStart = performance.now();
+                
+                for (let i = 0; i < testSize; i++) {
+                    const key = `test${i}`;
+                    const value = { name: `测试用户${i}`, contact: `1380013800${i % 10}` };
+                    
+                    testMap.set(key, value);
+                    testKeys.push(key);
+                }
+                
+                const insertEnd = performance.now();
+                const insertTime = Math.round(insertEnd - insertStart);
+                
+                // 查找测试
+                const searchStart = performance.now();
+                
+                for (let i = 0; i < testSize; i++) {
+                    const key = testKeys[Math.floor(Math.random() * testKeys.length)];
+                    const value = testMap.get(key);
+                }
+                
+                const searchEnd = performance.now();
+                const searchTime = Math.round(searchEnd - searchStart);
+                
+                // 遍历测试
+                const iterateStart = performance.now();
+                
+                for (const [key, value] of testMap) {
+                    // 空操作，仅遍历
+                }
+                
+                const iterateEnd = performance.now();
+                const iterateTime = Math.round(iterateEnd - iterateStart);
+                
+                // 更新结果
+                insertTimeEl.textContent = `${insertTime} ms`;
+                searchTimeEl.textContent = `${searchTime} ms`;
+                iterateTimeEl.textContent = `${iterateTime} ms`;
+                
+                // 更新图表
+                updatePerformanceChart(insertTime, searchTime, iterateTime);
+            }
+
+            // 性能对比图表
+            let performanceChart = null;
+            
+            function initPerformanceChart() {
+                const ctx = document.getElementById('performance-chart').getContext('2d');
+                
+                performanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['插入操作', '查找操作', '遍历操作'],
+                        datasets: [{
+                            label: '执行时间 (ms)',
+                            data: [0, 0, 0],
+                            backgroundColor: [
+                                '#3b82f6',
+                                '#10b981',
+                                '#8b5cf6'
+                            ],
+                            borderColor: [
+                                '#2563eb',
+                                '#059669',
+                                '#7c3aed'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: '时间 (毫秒)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function updatePerformanceChart(insertTime, searchTime, iterateTime) {
+                if (!performanceChart) {
+                    initPerformanceChart();
+                }
+                
+                performanceChart.data.datasets[0].data = [insertTime, searchTime, iterateTime];
+                performanceChart.update();
+            }
+
+            // 绑定事件
+            document.getElementById('find-student-btn').addEventListener('click', findStudent);
+            document.getElementById('add-to-map-btn').addEventListener('click', addToMap);
+            document.getElementById('clear-all-btn').addEventListener('click', clearAll);
+            document.getElementById('export-btn').addEventListener('click', exportData);
+            document.getElementById('start-test-btn').addEventListener('click', startPerformanceTest);
+            
+            // 输入框回车事件
+            document.getElementById('student-id').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    findStudent();
+                }
+            });
+
+            // 初始化
+            initStudentMap();
+            initPerformanceChart();
+        });
+    </script>
+</body>
+</html>
