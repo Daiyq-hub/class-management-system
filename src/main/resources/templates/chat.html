@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <input id="ip" placeholder="IP">
+    <input id="port" placeholder="Port">
+    <button onclick="connect()">Connect as Client</button>
+    <button onclick="listen()">Listen as Server</button>
+    <textarea id="messages"></textarea>
+    <input id="msg" placeholder="Message">
+    <button onclick="send()">Send</button>
+    
+    <script>
+        let socket;
+        function listen() {
+            // Java后端需启动ServerSocket，但这里模拟前端触发
+            // 实际: 使用WebSocket或后端Socket；但要求Socket，故后端实现
+        }
+        // ... (JS调用后端Socket API)
+    </script>
+</body>
+</html>
